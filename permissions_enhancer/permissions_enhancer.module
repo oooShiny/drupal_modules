@@ -1,0 +1,176 @@
+<?php
+
+/**
+ * @file
+ * Contains permissions_enhancer.module.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function permissions_enhancer_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.permissions_enhancer':
+      return '<p>' . t('This module enhances the permissions page with collapsible sections and active permissions summary.') . '</p>';
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function permissions_enhancer_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $route_name = \Drupal::routeMatch()->getRouteName();
+  
+  // Debug log the form ID and route
+  \Drupal::logger('permissions_enhancer')->debug('Form ID: @form_id, Route: @route', [
+    '@form_id' => $form_id,
+    '@route' => $route_name,
+  ]);
+  
+  // Check if we're on a permissions-related route
+  $is_permissions_route = (
+    $route_name === 'user.admin_permissions' ||
+    strpos($route_name, 'entity.user_role') === 0 ||
+    strpos(\Drupal::request()->getPathInfo(), '/admin/people/permissions') === 0
+  );
+  
+  // Check if the form has a permissions table or role permissions
+  $has_permissions_element = isset($form['permissions']) || isset($form['permissions_table']);
+  
+  if ($is_permissions_route || $has_permissions_element) {
+    permissions_enhancer_attach_assets($form);
+    permissions_enhancer_add_active_permissions_summary($form, $form_state);
+    permissions_enhancer_add_control_buttons($form);
+  }
+}
+
+/**
+ * Attach CSS and JS assets to the form.
+ */
+function permissions_enhancer_attach_assets(&$form) {
+  $form['#attached']['library'][] = 'permissions_enhancer/permissions_enhancer';
+}
+
+/**
+ * Add active permissions summary to the form.
+ */
+function permissions_enhancer_add_active_permissions_summary(&$form, FormStateInterface $form_state) {
+  $route_match = \Drupal::routeMatch();
+  $role_param = $route_match->getParameter('user_role');
+  
+  // Debug log the role detection
+  \Drupal::logger('permissions_enhancer')->debug('Role param type: @type, value: @value', [
+    '@type' => gettype($role_param),
+    '@value' => is_object($role_param) ? get_class($role_param) : (string)$role_param
+  ]);
+  
+  // Handle both string role ID and role entity object
+  if ($role_param) {
+    $role = is_object($role_param) ? $role_param : \Drupal::entityTypeManager()->getStorage('user_role')->load($role_param);
+    if ($role) {
+      $permissions = $role->getPermissions();
+      $grouped_permissions = permissions_enhancer_group_permissions_by_module($permissions);
+      
+      $form['active_permissions_summary'] = [
+        '#type' => 'details',
+        '#title' => t('Active Permissions for @role', ['@role' => $role->label()]),
+        '#open' => FALSE,
+        '#weight' => -100,
+        '#attributes' => ['class' => ['permissions-enhancer-summary']],
+      ];
+      
+      if (!empty($grouped_permissions)) {
+        foreach ($grouped_permissions as $module => $module_permissions) {
+          $form['active_permissions_summary'][$module] = [
+            '#type' => 'details',
+            '#title' => t('@module (@count permissions)', [
+              '@module' => $module,
+              '@count' => count($module_permissions)
+            ]),
+            '#open' => FALSE,
+          ];
+          
+          $items = [];
+          foreach ($module_permissions as $permission) {
+            $items[] = $permission;
+          }
+          
+          $form['active_permissions_summary'][$module]['list'] = [
+            '#theme' => 'item_list',
+            '#items' => $items,
+          ];
+        }
+      } else {
+        $form['active_permissions_summary']['empty'] = [
+          '#markup' => '<p>' . t('No permissions assigned to this role.') . '</p>',
+        ];
+      }
+    }
+  }
+}
+
+/**
+ * Add control buttons to the form.
+ */
+function permissions_enhancer_add_control_buttons(&$form) {
+  $form['permissions_controls'] = [
+    '#type' => 'container',
+    '#weight' => -50,
+    '#attributes' => ['class' => ['permissions-enhancer-controls']],
+  ];
+  
+  $form['permissions_controls']['expand_all'] = [
+    '#type' => 'button',
+    '#value' => t('Expand All'),
+    '#attributes' => [
+      'class' => ['permissions-enhancer-expand-all'],
+      'type' => 'button',
+    ],
+  ];
+  
+  $form['permissions_controls']['collapse_all'] = [
+    '#type' => 'button',
+    '#value' => t('Collapse All'),
+    '#attributes' => [
+      'class' => ['permissions-enhancer-collapse-all'],
+      'type' => 'button',
+    ],
+  ];
+  
+  $form['permissions_controls']['collapse_inactive'] = [
+    '#type' => 'button',
+    '#value' => t('Collapse Inactive'),
+    '#attributes' => [
+      'class' => ['permissions-enhancer-collapse-inactive'],
+      'type' => 'button',
+    ],
+  ];
+}
+
+/**
+ * Group permissions by their providing module.
+ */
+function permissions_enhancer_group_permissions_by_module(array $permissions) {
+  $permission_definitions = \Drupal::service('user.permissions')->getPermissions();
+  $grouped = [];
+  
+  foreach ($permissions as $permission) {
+    if (isset($permission_definitions[$permission])) {
+      $provider = $permission_definitions[$permission]['provider'] ?? 'unknown';
+      
+      // Convert module machine name to human readable
+      $module_info = \Drupal::service('extension.list.module')->getExtensionInfo($provider);
+      $module_name = $module_info['name'] ?? ucfirst($provider);
+      
+      $grouped[$module_name][] = $permission_definitions[$permission]['title']->render();
+    }
+  }
+  
+  // Sort modules alphabetically
+  ksort($grouped);
+  
+  return $grouped;
+}

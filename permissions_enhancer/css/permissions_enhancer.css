@@ -1,0 +1,133 @@
+/**
+ * @file
+ * Styles for the Permissions Enhancer module.
+ */
+
+/* Control buttons styling */
+.permissions-enhancer-controls {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+
+.permissions-enhancer-controls button {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.permissions-enhancer-controls button:hover {
+  background-color: #0056b3;
+}
+
+.permissions-enhancer-controls button:focus {
+  outline: 2px solid #80bdff;
+  outline-offset: 2px;
+}
+
+/* Active permissions summary styling */
+.permissions-enhancer-summary {
+  margin-bottom: 1.5rem;
+  border: 2px solid #007bff;
+  border-radius: 0.5rem;
+}
+
+.permissions-enhancer-summary > summary {
+  background-color: #e3f2fd;
+  padding: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.permissions-enhancer-summary > summary:hover {
+  background-color: #bbdefb;
+}
+
+/* Module header styling */
+.permissions-enhancer-module-header {
+  background-color: #f5f5f5 !important;
+}
+
+.permissions-enhancer-clickable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-left: 2rem !important;
+}
+
+.permissions-enhancer-clickable:hover {
+  background-color: #e9ecef !important;
+}
+
+.permissions-enhancer-toggle {
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  color: #666;
+  transition: transform 0.2s ease;
+}
+
+.permissions-enhancer-count {
+  font-weight: normal;
+  color: #666;
+  font-size: 0.875rem;
+  margin-left: 0.5rem;
+}
+
+/* Permission row styling */
+.permissions-enhancer-permission-row {
+  transition: opacity 0.2s ease;
+}
+
+.permissions-enhancer-permission-row.hidden {
+  display: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .permissions-enhancer-controls {
+    text-align: center;
+  }
+  
+  .permissions-enhancer-controls button {
+    display: block;
+    width: 100%;
+    margin-right: 0;
+  }
+  
+  .permissions-enhancer-clickable {
+    padding-left: 1.5rem !important;
+  }
+  
+  .permissions-enhancer-toggle {
+    left: 0.25rem;
+  }
+}
+
+/* Accessibility improvements */
+.permissions-enhancer-clickable:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .permissions-enhancer-module-header {
+    background-color: #000 !important;
+    color: #fff !important;
+  }
+  
+  .permissions-enhancer-clickable:hover {
+    background-color: #333 !important;
+  }
+}

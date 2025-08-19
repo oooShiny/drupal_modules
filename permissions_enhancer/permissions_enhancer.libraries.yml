@@ -1,0 +1,9 @@
+permissions_enhancer:
+  js:
+    js/permissions_enhancer.js: {}
+  css:
+    theme:
+      css/permissions_enhancer.css: {}
+  dependencies:
+    - core/drupal
+    - core/jquery

@@ -7,7 +7,7 @@
   Drupal.behaviors.permissionsEnhancer = {
     attach: function (context, settings) {
       var $table = $('#permissions', context);
-      
+
       if ($table.length === 0) {
         return;
       }
@@ -33,7 +33,7 @@
   }
 
   PermissionsEnhancer.prototype = {
-    
+
     /**
      * Initialize the enhancer.
      */
@@ -50,11 +50,11 @@
     parseTableStructure: function () {
       var self = this;
       var currentModule = null;
-      
+
       this.$table.find('tr').each(function (index) {
         var $row = $(this);
         var $cells = $row.find('td');
-        
+
         // Module header row: single cell with colspan
         if ($cells.length === 1 && $cells.first().attr('colspan')) {
           var moduleText = $cells.first().text().trim();
@@ -66,12 +66,12 @@
             isCollapsed: false
           };
           self.moduleGroups.push(currentModule);
-          
+
           // Add click handler and styling to module header
           $row.addClass('permissions-enhancer-module-header');
           $cells.first().addClass('permissions-enhancer-clickable');
-          
-        } 
+
+        }
         // Permission row: multiple cells with checkbox in second cell
         else if ($cells.length >= 2 && currentModule) {
           var $checkbox = $cells.eq(1).find('input[type="checkbox"]');
@@ -94,27 +94,31 @@
      */
     createModuleGroups: function () {
       var self = this;
-      
+
       $.each(this.moduleGroups, function (index, moduleGroup) {
-        // Add toggle indicator to module header
-        var $toggleIndicator = $('<span class="permissions-enhancer-toggle">▼</span>');
-        moduleGroup.$headerCell.prepend($toggleIndicator);
-        
         // Add permission count
         var totalCount = moduleGroup.permissionRows.length;
         var activeCount = moduleGroup.permissionRows.filter(function (row) {
           return row.isActive;
         }).length;
-        
-        var $countIndicator = $('<span class="permissions-enhancer-count"> (' + 
+
+        var countStyle = activeCount > 0 ? 'has-perms' : 'no-perms';
+
+        // Add toggle indicator to module header
+        var $toggleIndicator = $('<span class="permissions-enhancer-toggle">▼</span>');
+        moduleGroup.$headerCell.prepend($toggleIndicator);
+        moduleGroup.$headerRow.addClass(countStyle);
+
+        var $countIndicator = $('<span class="permissions-enhancer-count"> (' +
           activeCount + '/' + totalCount + ' active)</span>');
         moduleGroup.$headerCell.append($countIndicator);
-        
+
         // Store references for later use
         moduleGroup.$toggleIndicator = $toggleIndicator;
         moduleGroup.$countIndicator = $countIndicator;
         moduleGroup.totalCount = totalCount;
         moduleGroup.activeCount = activeCount;
+        moduleGroup.countStyle = countStyle;
       });
     },
 
@@ -123,7 +127,7 @@
      */
     addToggleClickHandlers: function () {
       var self = this;
-      
+
       $.each(this.moduleGroups, function (index, moduleGroup) {
         moduleGroup.$headerRow.on('click', function (e) {
           e.preventDefault();
@@ -138,15 +142,16 @@
     toggleModuleGroup: function (moduleGroup) {
       var self = this;
       moduleGroup.isCollapsed = !moduleGroup.isCollapsed;
-      
+
       $.each(moduleGroup.permissionRows, function (index, permissionRow) {
+        permissionRow.$row.addClass(moduleGroup.countStyle);
         if (moduleGroup.isCollapsed) {
           permissionRow.$row.hide();
         } else {
           permissionRow.$row.show();
         }
       });
-      
+
       // Update toggle indicator
       if (moduleGroup.isCollapsed) {
         moduleGroup.$toggleIndicator.text('▶');
@@ -154,7 +159,7 @@
         moduleGroup.$countIndicator.text(' (' + hiddenCount + ' permissions hidden)');
       } else {
         moduleGroup.$toggleIndicator.text('▼');
-        moduleGroup.$countIndicator.text(' (' + 
+        moduleGroup.$countIndicator.text(' (' +
           moduleGroup.activeCount + '/' + moduleGroup.totalCount + ' active)');
       }
     },
@@ -164,19 +169,19 @@
      */
     attachControlButtonEvents: function () {
       var self = this;
-      
+
       // Expand All button
       $('.permissions-enhancer-expand-all').on('click', function (e) {
         e.preventDefault();
         self.expandAll();
       });
-      
+
       // Collapse All button
       $('.permissions-enhancer-collapse-all').on('click', function (e) {
         e.preventDefault();
         self.collapseAll();
       });
-      
+
       // Collapse Inactive button
       $('.permissions-enhancer-collapse-inactive').on('click', function (e) {
         e.preventDefault();
